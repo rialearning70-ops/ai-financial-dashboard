@@ -697,7 +697,7 @@ def chart_asset_allocation(asset_alloc: pd.Series):
 with st.sidebar:
     st.markdown("##  FinHealth AI")
     st.markdown('<p class="section-label">Data Source</p>', unsafe_allow_html=True)
-    data_source = st.radio("", [" Upload CSV", " Use Sample Data"], label_visibility="collapsed")
+    data_source = st.radio("Choose data source", [" Upload CSV", " Use Sample Data"])
     st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
     uploaded_file = None
