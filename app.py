@@ -77,9 +77,9 @@ def sample():
     df["category"]=df["description"].apply(cat)
     return df
 
-st.markdown("# 💹 AI Financial Health Dashboard")
+st.markdown("# AI Financial Health Dashboard")
 st.markdown("---")
-st.markdown("### 📂 Upload Your Bank Statement")
+st.markdown("### Upload Your Bank Statement")
 uploaded=st.file_uploader("Upload CSV or PDF bank statement", type=["csv","pdf"])
 use_sample=st.button("🎲 Use Sample Data Instead")
 st.markdown("---")
