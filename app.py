@@ -81,7 +81,7 @@ st.markdown("# AI Financial Health Dashboard")
 st.markdown("---")
 st.markdown("### Upload Your Bank Statement")
 uploaded=st.file_uploader("Upload CSV or PDF bank statement", type=["csv","pdf"])
-use_sample=st.button("🎲 Use Sample Data Instead")
+use_sample=st.button(" Use Sample Data Instead")
 st.markdown("---")
 
 df=pd.DataFrame()
@@ -90,14 +90,14 @@ if uploaded:
         df=parse_pdf(uploaded)
     else:
         df=parse(uploaded)
-    if not df.empty: st.success(f"✅ Loaded {len(df)} transactions!")
+    if not df.empty: st.success(f" Loaded {len(df)} transactions!")
 elif use_sample or st.session_state.get("sample"):
     st.session_state["sample"]=True
     df=sample()
     st.info("Showing sample data")
 
 if df.empty:
-    st.markdown("<div style='text-align:center;padding:3rem;color:#475569'><div style='font-size:4rem'>💳</div><h3>Upload your bank statement above to get started</h3><p>Supports CSV and PDF from HDFC, SBI, ICICI, Axis, Kotak</p></div>",unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;padding:3rem;color:#475569'><div style='font-size:4rem'></div><h3>Upload your bank statement above to get started</h3><p>Supports CSV and PDF from HDFC, SBI, ICICI, Axis, Kotak</p></div>",unsafe_allow_html=True)
     st.stop()
 
 exp=df[df["type"]=="Debit"]; inc=df[df["type"]=="Credit"]
@@ -107,24 +107,24 @@ am=exp.groupby("month_num")["amount"].sum().mean() if not exp.empty else 0
 sr=round(inv/ts*100,1) if ts>0 else 0
 
 m1,m2,m3,m4,m5=st.columns(5)
-m1.metric("Total Spend",f"₹{ts/1e5:.1f}L" if ts>=1e5 else f"₹{ts:,.0f}")
-m2.metric("Total Income",f"₹{ti/1e5:.1f}L" if ti>=1e5 else f"₹{ti:,.0f}")
-m3.metric("Total Invested",f"₹{inv:,.0f}")
-m4.metric("Avg Monthly",f"₹{am:,.0f}")
+m1.metric("Total Spend",f"{ts/1e5:.1f}L" if ts>=1e5 else f"{ts:,.0f}")
+m2.metric("Total Income",f"{ti/1e5:.1f}L" if ti>=1e5 else f"{ti:,.0f}")
+m3.metric("Total Invested",f"{inv:,.0f}")
+m4.metric("Avg Monthly",f"{am:,.0f}")
 m5.metric("Savings Rate",f"{sr}%",delta="On Track" if sr>=20 else "Below Target")
 st.markdown("---")
 
 COLS={"Food & Dining":"#f43f5e","Transport":"#f59e0b","Groceries":"#10b981","Health":"#06b6d4","Entertainment":"#8b5cf6","Shopping":"#ec4899","Utilities":"#3b82f6","Rent & Housing":"#6366f1","Education":"#14b8a6","Investments":"#00e5a0","Banking":"#64748b","Travel":"#f97316","Other":"#475569"}
 TH=dict(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",font=dict(color="#94a3b8",size=12),margin=dict(l=10,r=10,t=30,b=10))
 
-t1,t2,t3,t4=st.tabs(["📊 Expense Analysis","💼 Portfolio Risk","🤖 AI Suggestions","📋 Transactions"])
+t1,t2,t3,t4=st.tabs([" Expense Analysis"," Portfolio Risk"," AI Suggestions"," Transactions"])
 
 with t1:
     c1,c2=st.columns(2)
     with c1:
         st.markdown("**Expense Breakdown**")
         cd=exp.groupby("category")["amount"].sum().reset_index()
-        fig=go.Figure(go.Pie(labels=cd["category"],values=cd["amount"],hole=0.6,marker_colors=[COLS.get(c,"#475569") for c in cd["category"]],hovertemplate="<b>%{label}</b><br>₹%{value:,.0f}<extra></extra>"))
+        fig=go.Figure(go.Pie(labels=cd["category"],values=cd["amount"],hole=0.6,marker_colors=[COLS.get(c,"#475569") for c in cd["category"]],hovertemplate="<b>%{label}</b><br>%{value:,.0f}<extra></extra>"))
         fig.update_layout(**TH,annotations=[dict(text="Spend",x=0.5,y=0.5,font_size=14,font_color="#f1f5f9",showarrow=False)])
         st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
     with c2:
@@ -132,13 +132,13 @@ with t1:
         mo=exp.groupby("month_num")["amount"].sum().reset_index()
         mo["m"]=mo["month_num"].dt.strftime("%b %Y")
         mo=mo.sort_values("month_num")
-        fig2=go.Figure(go.Bar(x=mo["m"],y=mo["amount"],marker_color="#00e5a0",hovertemplate="<b>%{x}</b><br>₹%{y:,.0f}<extra></extra>"))
-        fig2.update_layout(**TH,yaxis=dict(tickprefix="₹",gridcolor="rgba(255,255,255,0.04)"))
+        fig2=go.Figure(go.Bar(x=mo["m"],y=mo["amount"],marker_color="#00e5a0",hovertemplate="<b>%{x}</b><br>%{y:,.0f}<extra></extra>"))
+        fig2.update_layout(**TH,yaxis=dict(tickprefix="",gridcolor="rgba(255,255,255,0.04)"))
         st.plotly_chart(fig2,use_container_width=True,config={"displayModeBar":False})
     st.markdown("**Top 10 Transactions**")
     t10=exp.nlargest(10,"amount")[["date","description","category","amount"]].copy()
     if "date" in t10.columns: t10["date"]=t10["date"].dt.strftime("%d %b %Y")
-    t10["amount"]=t10["amount"].apply(lambda x:f"₹{x:,.0f}")
+    t10["amount"]=t10["amount"].apply(lambda x:f"{x:,.0f}")
     st.dataframe(t10,use_container_width=True,hide_index=True)
 
 with t2:
@@ -156,10 +156,10 @@ with t2:
     with r2:
         st.markdown(f"**Equity Allocation:** {ep}%"); st.progress(min(int(ep),100))
         st.markdown(f"**Savings Rate:** {sr}%"); st.progress(min(int(sr),100))
-        st.markdown(f"**Total Invested:** ₹{inv:,.0f}")
+        st.markdown(f"**Total Invested:** {inv:,.0f}")
 
 with t3:
-    if st.button("✨ Generate AI Insights"):
+    if st.button(" Generate AI Insights"):
         t5=exp.groupby("category")["amount"].sum().nlargest(5).to_dict()
         try:
             import anthropic
@@ -169,7 +169,7 @@ with t3:
         except:
             st.markdown(f"""**Spending Alert:** Review your top expense categories and set monthly limits.
 
-**Investment:** At {sr}% savings rate — target 20-30% for long-term wealth creation.
+**Investment:** At {sr}% savings rate  target 20-30% for long-term wealth creation.
 
 **Portfolio:** With {ep}% equity exposure, ensure 6-month emergency fund first.
 
@@ -182,6 +182,6 @@ with t4:
     fl=df[df["description"].str.contains(s,case=False,na=False)] if s else df
     sh=fl[["date","description","category","amount","type"]].copy()
     if "date" in sh.columns: sh["date"]=sh["date"].dt.strftime("%d %b %Y")
-    sh["amount"]=sh["amount"].apply(lambda x:f"₹{x:,.0f}")
+    sh["amount"]=sh["amount"].apply(lambda x:f"{x:,.0f}")
     st.dataframe(sh,use_container_width=True,hide_index=True,height=400)
-    st.download_button("⬇️ Export CSV",fl.to_csv(index=False),"transactions.csv","text/csv")
+    st.download_button(" Export CSV",fl.to_csv(index=False),"transactions.csv","text/csv")
