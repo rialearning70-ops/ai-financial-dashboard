@@ -21,6 +21,23 @@ def cat(d):
         if any(k in d for k in ks): return c
     return "Other"
 
+
+def parse_pdf(f):
+    try:
+        import pdfplumber, io
+        rows = []
+        with pdfplumber.open(f) as pdf:
+            for page in pdf.pages:
+                for table in (page.extract_tables() or []):
+                    for row in table:
+                        if row: rows.append([str(c).strip() if c else '' for c in row])
+        if not rows: return pd.DataFrame()
+        df = pd.DataFrame(rows[1:], columns=[h.lower().strip() for h in rows[0]])
+        buf = io.StringIO(); df.to_csv(buf,index=False); buf.seek(0)
+        return parse(buf)
+    except Exception as e:
+        st.error(f'PDF error: {e}'); return pd.DataFrame()
+
 def parse(f):
     try:
         try: df=pd.read_csv(f,encoding="utf-8")
@@ -75,7 +92,10 @@ st.markdown("---")
 
 df=pd.DataFrame()
 if uploaded:
-    df=parse(uploaded)
+    if uploaded.name.lower().endswith(".pdf"):
+        df=parse_pdf(uploaded)
+    else:
+        df=parse(uploaded)
     if not df.empty: st.success(f"✅ Loaded {len(df)} transactions!")
 elif use_sample or st.session_state.get("sample"):
     st.session_state["sample"]=True
