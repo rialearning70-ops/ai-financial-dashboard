@@ -1,3 +1,26 @@
+def parse_pdf(f):
+    try:
+        import pdfplumber, io
+        rows, header = [], None
+        with pdfplumber.open(f) as pdf:
+            for page in pdf.pages:
+                for table in (page.extract_tables() or []):
+                    for row in table:
+                        if not row: continue
+                        clean = [str(x).strip() if x else '' for x in row]
+                        if not any(clean): continue
+                        if header is None: header = clean
+                        elif len(clean) == len(header): rows.append(clean)
+        if not header or not rows: return pd.DataFrame()
+        df = pd.DataFrame(rows, columns=[h.lower() for h in header])
+        buf = io.StringIO()
+        df.to_csv(buf, index=False)
+        buf.seek(0)
+        return parse(buf)
+    except Exception as e:
+        st.error(f'PDF error: {e}')
+        return pd.DataFrame()
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -21,50 +44,6 @@ def cat(d):
         if any(k in d for k in ks): return c
     return "Other"
 
-
-def parse_pdf_OLD(f):
-    pass
-
-
-def parse_pdf(f):
-    try:
-        import pdfplumber, io
-        all_rows = []
-        header = None
-        with pdfplumber.open(f) as pdf:
-            for page in pdf.pages:
-                for table in (page.extract_tables() or []):
-                    for row in table:
-                        if not row: continue
-                        clean = [str(c).strip() if c else '' for c in row]
-                        if not any(clean): continue
-                        if header is None:
-                            header = clean
-                        elif len(clean) == len(header):
-                            all_rows.append(clean)
-        if not header or not all_rows:
-            st.error('Could not extract table from PDF. Please use CSV.')
-            return pd.DataFrame()
-        df = pd.DataFrame(all_rows, columns=[h.lower().strip() for h in header])
-        buf = io.StringIO(); df.to_csv(buf,index=False); buf.seek(0)
-        return parse(buf)
-    except Exception as e:
-        st.error(f'PDF error: {e}'); return pd.DataFrame()
-
-
-def parse_pdf_SKIP(f):
-    rows = []
-        with pdfplumber.open(f) as pdf:
-            for page in pdf.pages:
-                for table in (page.extract_tables() or []):
-                    for row in table:
-                        if row: rows.append([str(c).strip() if c else '' for c in row])
-        if not rows: return pd.DataFrame()
-        df = pd.DataFrame(rows[1:], columns=[h.lower().strip() for h in rows[0]])
-        buf = io.StringIO(); df.to_csv(buf,index=False); buf.seek(0)
-        return parse(buf)
-    except Exception as e:
-        st.error(f'PDF error: {e}'); return pd.DataFrame()
 
 def parse(f):
     try:
