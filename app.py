@@ -1,49 +1,36 @@
 def parse_pdf(f):
     try:
-        import pdfplumber, io
-        rows, header = [], None
+        import pdfplumber, io, re
+        text_rows = []
         with pdfplumber.open(f) as pdf:
             for page in pdf.pages:
-                for table in (page.extract_tables() or []):
-                    for row in table:
-                        if not row: continue
-                        clean = [str(x).strip() if x else '' for x in row]
-                        if not any(clean): continue
-                        if header is None: header = clean
-                        elif len(clean) == len(header): rows.append(clean)
-        if not header or not rows: return pd.DataFrame()
-        df = pd.DataFrame(rows, columns=[h.lower() for h in header])
+                tables = page.extract_tables()
+                if tables:
+                    for table in tables:
+                        for row in table:
+                            if not row: continue
+                            clean = [str(x).strip() if x else "" for x in row]
+                            if any(clean): text_rows.append(clean)
+                else:
+                    text = page.extract_text()
+                    if text:
+                        for line in text.split(chr(10)):
+                            parts = line.strip().split()
+                            if len(parts) >= 3: text_rows.append(parts)
+        if not text_rows:
+            st.error("No data found in PDF.")
+            return pd.DataFrame()
+        max_len = max(len(r) for r in text_rows)
+        padded = [r + [""]*(max_len-len(r)) for r in text_rows]
+        header = padded[0]
+        df = pd.DataFrame(padded[1:], columns=[str(h).lower().strip() for h in header])
         buf = io.StringIO()
         df.to_csv(buf, index=False)
         buf.seek(0)
         return parse(buf)
     except Exception as e:
-        st.error(f'PDF error: {e}')
+        st.error(f"PDF error: {e}")
         return pd.DataFrame()
-
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-import json
-
-st.set_page_config(page_title="AI Financial Health Dashboard", page_icon="💹", layout="wide")
-
-st.markdown("""<style>
-html,body,.stApp{background:#0a0e1a!important;color:#f1f5f9;font-family:'DM Sans',sans-serif}
-h1,h2,h3{font-family:'Syne',sans-serif!important;font-weight:800}
-#MainMenu,footer,header{visibility:hidden}
-[data-testid="metric-container"]{background:#111827!important;border:1px solid rgba(255,255,255,0.07)!important;border-radius:12px!important;padding:1rem!important}
-.stButton>button{background:linear-gradient(135deg,#00e5a0,#00b4d8)!important;color:#0a0e1a!important;font-weight:700!important;border:none!important;border-radius:8px!important}
-</style>""", unsafe_allow_html=True)
-
-CATS = {"Food & Dining":["zomato","swiggy","restaurant","cafe","food","pizza","burger"],"Transport":["uber","ola","rapido","metro","petrol","fuel","cab"],"Groceries":["bigbasket","blinkit","dmart","grocery","zepto","vegetables"],"Health":["pharmacy","hospital","doctor","apollo","medplus","medicine"],"Entertainment":["netflix","prime","hotstar","spotify","movie","pvr","inox"],"Shopping":["amazon","flipkart","myntra","meesho","nykaa"],"Utilities":["electricity","water","airtel","jio","vodafone","recharge"],"Rent & Housing":["rent","maintenance","society","emi","mortgage"],"Education":["udemy","fees","school","college","tuition"],"Investments":["sip","mutual fund","zerodha","groww","stocks","ppf","nps"],"Banking":["atm","neft","upi","charges"],"Travel":["flight","makemytrip","irctc","train"]}
-
-def cat(d):
-    d=str(d).lower()
-    for c,ks in CATS.items():
-        if any(k in d for k in ks): return c
-    return "Other"
-
 
 def parse(f):
     try:
